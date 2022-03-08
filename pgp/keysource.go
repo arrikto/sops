@@ -159,11 +159,6 @@ func (key *MasterKey) encryptWithCryptoOpenPGP(dataKey []byte) error {
 
 // Encrypt encrypts the data key with the PGP key with the same fingerprint as the MasterKey. It looks for PGP public keys in $PGPHOME/pubring.gpg.
 func (key *MasterKey) Encrypt(dataKey []byte) error {
-	openpgpErr := key.encryptWithCryptoOpenPGP(dataKey)
-	if openpgpErr == nil {
-		log.WithField("fingerprint", key.Fingerprint).Info("Encryption succeeded")
-		return nil
-	}
 	binaryErr := key.encryptWithGPGBinary(dataKey)
 	if binaryErr == nil {
 		log.WithField("fingerprint", key.Fingerprint).Info("Encryption succeeded")
@@ -171,8 +166,8 @@ func (key *MasterKey) Encrypt(dataKey []byte) error {
 	}
 	log.WithField("fingerprint", key.Fingerprint).Info("Encryption failed")
 	return fmt.Errorf(
-		`could not encrypt data key with PGP key: golang.org/x/crypto/openpgp error: %v; GPG binary error: %v`,
-		openpgpErr, binaryErr)
+		`could not encrypt data key with PGP key: GPG binary error: %v`,
+		binaryErr)
 }
 
 // EncryptIfNeeded encrypts the data key with PGP only if it's needed, that is, if it hasn't been encrypted already
@@ -221,11 +216,6 @@ func (key *MasterKey) decryptWithCryptoOpenpgp() ([]byte, error) {
 
 // Decrypt uses PGP to obtain the data key from the EncryptedKey store in the MasterKey and returns it
 func (key *MasterKey) Decrypt() ([]byte, error) {
-	dataKey, openpgpErr := key.decryptWithCryptoOpenpgp()
-	if openpgpErr == nil {
-		log.WithField("fingerprint", key.Fingerprint).Info("Decryption succeeded")
-		return dataKey, nil
-	}
 	dataKey, binaryErr := key.decryptWithGPGBinary()
 	if binaryErr == nil {
 		log.WithField("fingerprint", key.Fingerprint).Info("Decryption succeeded")
@@ -233,8 +223,7 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 	}
 	log.WithField("fingerprint", key.Fingerprint).Info("Decryption failed")
 	return nil, fmt.Errorf(
-		`could not decrypt data key with PGP key: golang.org/x/crypto/openpgp error: %v; GPG binary error: %v`,
-		openpgpErr, binaryErr)
+		`could not decrypt data key with PGP key: GPG binary error: %v`, binaryErr)
 }
 
 // NeedsRotation returns whether the data key needs to be rotated or not
